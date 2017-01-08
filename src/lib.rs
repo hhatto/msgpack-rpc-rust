@@ -6,6 +6,7 @@
 extern crate mioco;
 extern crate rmp as msgpack;
 extern crate rmp_serde;
+extern crate rmpv;
 
 mod client;
 mod message;

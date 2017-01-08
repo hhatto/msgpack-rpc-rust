@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use mioco::Evented;
 use mioco::unix;
-use msgpack::Value;
+use rmpv::Value;
 
 use ::message::*;
 

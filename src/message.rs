@@ -1,8 +1,9 @@
 use std::io;
 use std::io::prelude::*;
 
-use msgpack::{self, Value};
-use msgpack::value::Integer;
+use msgpack;
+use rmpv;
+use rmpv::Value;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Request {
@@ -44,8 +45,7 @@ impl Message {
     pub fn unpack<R>(reader: &mut R) -> io::Result<Message>
         where R: Read
     {
-        let value = msgpack::decode::read_value(reader)
-                        .expect("Could not read value from transport");
+        let value = rmpv::decode::read_value(reader).expect("Could not read value from transport");
 
         let array = match value {
             Value::Array(array) => array,
@@ -53,13 +53,13 @@ impl Message {
         };
 
         let msg_type = match *array.get(0).unwrap() {
-            Value::Integer(Integer::U64(msg_type)) => msg_type,
+            Value::U64(msg_type) => msg_type,
             _ => panic!(),
         };
 
         let message = match msg_type {
             0 => {
-                let id = if let Value::Integer(Integer::U64(id)) = *array.get(1).unwrap() {
+                let id = if let Value::U64(id) = *array.get(1).unwrap() {
                     id
                 } else {
                     panic!();
@@ -84,7 +84,7 @@ impl Message {
                 })
             }
             1 => {
-                let id = if let Value::Integer(Integer::U64(id)) = *array.get(1).unwrap() {
+                let id = if let Value::U64(id) = *array.get(1).unwrap() {
                     id
                 } else {
                     panic!();
@@ -130,8 +130,8 @@ impl Message {
         let value = match *self {
             Message::Request(Request { id, ref method, ref params }) => {
                 Value::Array(vec![
-                    Value::Integer(Integer::U64(self.msgtype() as u64)),
-                    Value::Integer(Integer::U64(id as u64)),
+                    Value::U64(self.msgtype() as u64),
+                    Value::U64(id as u64),
                     Value::String(method.to_owned()),
                     Value::Array(params.to_owned()),
                 ])
@@ -143,22 +143,22 @@ impl Message {
                 };
 
                 Value::Array(vec![
-                    Value::Integer(Integer::U64(self.msgtype() as u64)),
-                    Value::Integer(Integer::U64(id as u64)),
+                    Value::U64(self.msgtype() as u64),
+                    Value::U64(id as u64),
                     error,
                     result,
                 ])
             }
             Message::Notification(Notification { ref method, ref params }) => {
                 Value::Array(vec![
-                    Value::Integer(Integer::U64(self.msgtype() as u64)),
+                    Value::U64(self.msgtype() as u64),
                     Value::String(method.to_owned()),
                     Value::Array(params.to_owned()),
                 ])
             }
         };
         let mut bytes = vec![];
-        msgpack::encode::value::write_value(&mut bytes, &value).unwrap();
+        rmpv::encode::write_value(&mut bytes, &value).unwrap();
         bytes
     }
 }

@@ -4,7 +4,7 @@ use std::net::{SocketAddr, TcpListener, ToSocketAddrs};
 
 use mioco;
 use mioco::tcp::TcpListener as NonblockingTcpListener;
-use msgpack::Value;
+use rmpv::Value;
 
 use message::Message;
 use message::Response;
