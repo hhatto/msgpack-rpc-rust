@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::i32;
+use std::u32;
 use std::io::prelude::*;
 use std::net::{TcpStream, ToSocketAddrs};
 use std::thread;
@@ -117,7 +117,7 @@ impl Client {
 
         let id: MessageId = self.id_generator.fetch_add(1, ordering) as MessageId;
 
-        if id == i32::MAX as MessageId {
+        if id == u32::MAX as MessageId {
             self.id_generator.store(0, ordering);
         }
 
