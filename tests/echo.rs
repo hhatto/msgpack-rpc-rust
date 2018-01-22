@@ -1,9 +1,10 @@
 extern crate msgpack_rpc;
 extern crate rmp as msgpack;
+extern crate rmpv;
 
 use std::thread;
 
-use msgpack::Value;
+use rmpv::Value;
 use msgpack_rpc::*;
 
 #[derive(Clone, Default)]
@@ -13,7 +14,7 @@ impl Dispatch for EchoServer {
     fn dispatch(&mut self, method: &str, args: Vec<Value>) -> Result<Value, Value> {
         match method {
             "echo" => Ok(Value::Array(args.to_owned())),
-            _ => Err(Value::String("Invalid method name.".to_owned())),
+            _ => Err(Value::from("Invalid method name.".to_owned())),
         }
     }
 }
@@ -27,8 +28,8 @@ fn echo() {
         server.handle(EchoServer);
     });
 
-    let result = client.call("echo", vec![Value::String("Hello, world!".to_owned())]);
-    assert_eq!(Value::Array(vec![Value::String("Hello, world!".to_owned())]),
+    let result = client.call("echo", vec![Value::from("Hello, world!".to_owned())]);
+    assert_eq!(Value::Array(vec![Value::from("Hello, world!".to_owned())]),
                result.unwrap());
 }
 
@@ -42,6 +43,6 @@ fn invalid_method_name() {
     });
 
     let result = client.call("bad_method", vec![]);
-    assert_eq!(Value::String("Invalid method name.".to_owned()),
+    assert_eq!(Value::from("Invalid method name.".to_owned()),
                result.unwrap_err());
 }

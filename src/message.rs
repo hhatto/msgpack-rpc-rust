@@ -1,20 +1,19 @@
 use std::io;
 use std::io::prelude::*;
 
-use msgpack;
 use rmpv;
 use rmpv::Value;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Request {
-    pub id: i32,
+    pub id: u32,
     pub method: String,
     pub params: Vec<Value>,
 }
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Response {
-    pub id: i32,
+    pub id: u32,
     pub result: Result<Value, Value>,
 }
 
@@ -53,14 +52,14 @@ impl Message {
         };
 
         let msg_type = match *array.get(0).unwrap() {
-            Value::U64(msg_type) => msg_type,
+            Value::Integer(msg_type) => msg_type,
             _ => panic!(),
         };
 
-        let message = match msg_type {
-            0 => {
-                let id = if let Value::U64(id) = *array.get(1).unwrap() {
-                    id
+        let message = match msg_type.as_i64() {
+            Some(0) => {
+                let id = if let Value::Integer(ref id) = *array.get(1).unwrap() {
+                    id.as_u64().expect("fail convert u64")
                 } else {
                     panic!();
                 };
@@ -78,14 +77,14 @@ impl Message {
                 };
 
                 Message::Request(Request {
-                    id: id as i32,
-                    method: method.to_owned(),
+                    id: id as u32,
+                    method: method.to_owned().into_str().expect("fail convert str"),
                     params: params.to_owned(),
                 })
             }
-            1 => {
-                let id = if let Value::U64(id) = *array.get(1).unwrap() {
-                    id
+            Some(1) => {
+                let id = if let Value::Integer(ref id) = *array.get(1).unwrap() {
+                    id.as_u64().expect("fail convert u64")
                 } else {
                     panic!();
                 };
@@ -99,11 +98,11 @@ impl Message {
                 };
 
                 Message::Response(Response {
-                    id: id as i32,
+                    id: id as u32,
                     result: result,
                 })
             }
-            2 => {
+            Some(2) => {
                 let method = if let Value::String(ref method) = *array.get(1).unwrap() {
                     method
                 } else {
@@ -117,7 +116,7 @@ impl Message {
                 };
 
                 Message::Notification(Notification {
-                    method: method.to_owned(),
+                    method: method.to_owned().into_str().expect("fail convert str"),
                     params: params.to_owned(),
                 })
             }
@@ -130,9 +129,9 @@ impl Message {
         let value = match *self {
             Message::Request(Request { id, ref method, ref params }) => {
                 Value::Array(vec![
-                    Value::U64(self.msgtype() as u64),
-                    Value::U64(id as u64),
-                    Value::String(method.to_owned()),
+                    Value::from(self.msgtype() as u64),
+                    Value::from(id),
+                    Value::from(method.to_owned()),
                     Value::Array(params.to_owned()),
                 ])
             }
@@ -143,16 +142,16 @@ impl Message {
                 };
 
                 Value::Array(vec![
-                    Value::U64(self.msgtype() as u64),
-                    Value::U64(id as u64),
+                    Value::from(self.msgtype() as u64),
+                    Value::from(id as u64),
                     error,
                     result,
                 ])
             }
             Message::Notification(Notification { ref method, ref params }) => {
                 Value::Array(vec![
-                    Value::U64(self.msgtype() as u64),
-                    Value::String(method.to_owned()),
+                    Value::from(self.msgtype() as u64),
+                    Value::from(method.to_owned()),
                     Value::Array(params.to_owned()),
                 ])
             }
@@ -167,14 +166,14 @@ impl Message {
 mod tests {
     use super::*;
     use std::io::Cursor;
-    use msgpack::Value;
+    use rmpv::Value;
 
     #[test]
     fn pack_unpack_request() {
         let request = Message::Request(Request {
             id: 0,
             method: "echo".to_owned(),
-            params: vec![Value::String("hello world!".to_owned())],
+            params: vec![Value::from("hello world!".to_owned())],
         });
 
         let bytes = request.pack();
@@ -188,7 +187,7 @@ mod tests {
     fn pack_unpack_response() {
         let response = Message::Response(Response {
             id: 0,
-            result: Ok(Value::String("test".to_owned())),
+            result: Ok(Value::from("test".to_owned())),
         });
 
         let bytes = response.pack();
@@ -202,7 +201,7 @@ mod tests {
     fn pack_unpack_notification() {
         let notification = Message::Notification(Notification {
             method: "ping".to_owned(),
-            params: vec![Value::String("hi".to_owned())],
+            params: vec![Value::from("hi".to_owned())],
         });
 
         let bytes = notification.pack();

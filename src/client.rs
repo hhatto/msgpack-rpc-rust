@@ -6,13 +6,12 @@ use std::thread;
 use std::sync::{mpsc, Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use mioco::Evented;
 use mioco::unix;
 use rmpv::Value;
 
 use ::message::*;
 
-type MessageId = i32;
+type MessageId = u32;
 
 /// A new msgpack-RPC client.
 ///
